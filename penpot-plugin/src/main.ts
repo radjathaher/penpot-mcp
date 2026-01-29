@@ -8,6 +8,20 @@ document.body.dataset.theme = searchParams.get("theme") ?? "light";
 const isMultiUserMode = searchParams.get("multiUser") === "true";
 console.log("Penpot MCP multi-user mode:", isMultiUserMode);
 
+const resolveWebsocketUrl = (): string => {
+    const configured =
+        typeof PENPOT_MCP_WEBSOCKET_URL !== "undefined" ? PENPOT_MCP_WEBSOCKET_URL : "";
+    if (configured) {
+        return configured;
+    }
+
+    const baseUrl = new URL(window.location.href);
+    const scheme = baseUrl.protocol === "https:" ? "wss" : "ws";
+    return `${scheme}://${baseUrl.host}/ws`;
+};
+
+const websocketUrl = resolveWebsocketUrl();
+
 // WebSocket connection management
 let ws: WebSocket | null = null;
 const statusElement = document.getElementById("connection-status");
@@ -51,7 +65,7 @@ function connectToMcpServer(): void {
     }
 
     try {
-        let wsUrl = PENPOT_MCP_WEBSOCKET_URL;
+        let wsUrl = websocketUrl;
         if (isMultiUserMode) {
             // TODO obtain proper userToken from penpot
             const userToken = "dummyToken";
