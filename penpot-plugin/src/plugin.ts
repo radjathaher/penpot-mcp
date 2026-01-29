@@ -10,46 +10,9 @@ const taskHandlers: TaskHandler[] = [new ExecuteCodeTaskHandler()];
 declare const IS_MULTI_USER_MODE: boolean;
 const isMultiUserMode = typeof IS_MULTI_USER_MODE !== "undefined" ? IS_MULTI_USER_MODE : false;
 
-const resolvePluginToken = (): string | null => {
-    const sources: string[] = [];
-    const currentScript = document.currentScript as HTMLScriptElement | null;
-    if (currentScript?.src) {
-        sources.push(currentScript.src);
-    }
-
-    for (const el of Array.from(document.querySelectorAll("script[src]"))) {
-        const src = (el as HTMLScriptElement).src;
-        if (src) {
-            sources.push(src);
-        }
-    }
-
-    for (const src of sources) {
-        try {
-            const url = new URL(src, window.location.href);
-            const queryToken = url.searchParams.get("token");
-            if (queryToken) {
-                return queryToken;
-            }
-
-            const parts = url.pathname.split("/").filter(Boolean);
-            const pluginIndex = parts.indexOf("plugin");
-            if (pluginIndex >= 0 && parts[pluginIndex + 1]) {
-                return parts[pluginIndex + 1];
-            }
-        } catch {
-            continue;
-        }
-    }
-
-    return null;
-};
-
 // Open the plugin UI (main.ts)
 const uiParams = `?theme=${penpot.theme}&multiUser=${isMultiUserMode}`;
-const token = resolvePluginToken();
-const uiPath = token ? `/plugin/${encodeURIComponent(token)}/${uiParams}` : uiParams;
-penpot.ui.open("Penpot MCP Plugin", uiPath, { width: 158, height: 200 });
+penpot.ui.open("Penpot MCP Plugin", uiParams, { width: 158, height: 200 });
 
 // Handle messages
 penpot.ui.onMessage<string | { id: string; task: string; params: any }>((message) => {
