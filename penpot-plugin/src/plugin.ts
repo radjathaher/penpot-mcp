@@ -11,8 +11,21 @@ declare const IS_MULTI_USER_MODE: boolean;
 const isMultiUserMode = typeof IS_MULTI_USER_MODE !== "undefined" ? IS_MULTI_USER_MODE : false;
 
 const resolvePluginToken = (): string | null => {
-    const script = document.currentScript as HTMLScriptElement | null;
-    const src = script?.getAttribute("src");
+    let src = "";
+    try {
+        const metaUrl = (import.meta as { url?: string }).url;
+        if (metaUrl) {
+            src = metaUrl;
+        }
+    } catch {
+        // ignore
+    }
+
+    if (!src) {
+        const script = document.currentScript as HTMLScriptElement | null;
+        src = script?.getAttribute("src") ?? "";
+    }
+
     if (!src) {
         return null;
     }
