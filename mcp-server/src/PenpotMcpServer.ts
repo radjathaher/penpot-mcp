@@ -280,8 +280,12 @@ export class PenpotMcpServer {
             if (!pluginToken) {
                 return value;
             }
-            const separator = value.includes("?") ? "&" : "?";
-            return `${value}${separator}token=${encodeURIComponent(pluginToken)}`;
+            if (value.startsWith("http")) {
+                const separator = value.includes("?") ? "&" : "?";
+                return `${value}${separator}token=${encodeURIComponent(pluginToken)}`;
+            }
+            const normalized = value.startsWith("/") ? value.slice(1) : value;
+            return `plugin/${encodeURIComponent(pluginToken)}/${normalized}`;
         };
 
         const setCors = (res: any): void => {
@@ -293,7 +297,7 @@ export class PenpotMcpServer {
             if (!pluginToken) {
                 return next();
             }
-            const token = req.query.token;
+            const token = req.query.token || req.params.token;
             if (token !== pluginToken) {
                 res.status(401).send("Invalid plugin token");
                 return;
@@ -314,6 +318,21 @@ export class PenpotMcpServer {
             setCors(res);
             res.json(manifest);
         });
+
+        this.app.get("/manifest/:token", requireToken, (req: any, res: any) => {
+            const manifest = { ...baseManifest };
+            if (manifest.code) {
+                manifest.code = withToken(manifest.code);
+            }
+            setCors(res);
+            res.json(manifest);
+        });
+
+        this.app.use("/plugin/:token", requireToken, (req: any, res: any, next: any) => {
+            setCors(res);
+            next();
+        });
+        this.app.use("/plugin/:token", express.static(pluginDir));
 
         this.app.use(requireToken, (req: any, res: any, next: any) => {
             setCors(res);
