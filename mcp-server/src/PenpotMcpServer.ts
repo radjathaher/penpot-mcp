@@ -328,13 +328,13 @@ export class PenpotMcpServer {
             res.json(manifest);
         });
 
-        this.app.use("/plugin/:token", requireToken, (req: any, res: any, next: any) => {
+        this.app.use("/plugin/:token", (req: any, res: any, next: any) => {
             setCors(res);
             next();
         });
         this.app.use("/plugin/:token", express.static(pluginDir));
 
-        this.app.use(requireToken, (req: any, res: any, next: any) => {
+        this.app.use((req: any, res: any, next: any) => {
             setCors(res);
             next();
         });
