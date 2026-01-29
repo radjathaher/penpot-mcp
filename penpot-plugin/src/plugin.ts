@@ -12,7 +12,7 @@ const isMultiUserMode = typeof IS_MULTI_USER_MODE !== "undefined" ? IS_MULTI_USE
 
 // Open the plugin UI (main.ts)
 const uiParams = `?theme=${penpot.theme}&multiUser=${isMultiUserMode}`;
-penpot.ui.open("Penpot MCP Plugin", uiParams, { width: 158, height: 200 });
+penpot.ui.open("Penpot MCP Plugin", `index.html${uiParams}`, { width: 158, height: 200 });
 
 // Handle messages
 penpot.ui.onMessage<string | { id: string; task: string; params: any }>((message) => {
