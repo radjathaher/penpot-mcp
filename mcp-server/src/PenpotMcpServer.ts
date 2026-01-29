@@ -2,6 +2,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { AsyncLocalStorage } from "async_hooks";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { existsSync, readFileSync } from "fs";
+import * as path from "path";
 import { ExecuteCodeTool } from "./tools/ExecuteCodeTool";
 import { PluginBridge } from "./PluginBridge";
 import { ConfigurationLoader } from "./ConfigurationLoader";
@@ -226,12 +228,110 @@ export class PenpotMcpServer {
         });
     }
 
+    private setupApiKeyMiddleware(): void {
+        const apiKey = process.env.PENPOT_MCP_API_KEY;
+        if (!apiKey) {
+            return;
+        }
+
+        const matchesApiKey = (req: any): boolean => {
+            const headerKey = req.headers["x-api-key"];
+            if (typeof headerKey === "string" && headerKey === apiKey) {
+                return true;
+            }
+            const authHeader = req.headers["authorization"];
+            if (typeof authHeader === "string" && authHeader === `Bearer ${apiKey}`) {
+                return true;
+            }
+            return false;
+        };
+
+        this.app.use((req: any, res: any, next: any) => {
+            const protectedPaths = ["/mcp", "/sse", "/messages"];
+            if (!protectedPaths.some((prefix) => req.path.startsWith(prefix))) {
+                return next();
+            }
+            if (!matchesApiKey(req)) {
+                res.status(401).send("Invalid MCP API key");
+                return;
+            }
+            next();
+        });
+    }
+
+    private setupPluginEndpoints(express: any): void {
+        const pluginDir = process.env.PENPOT_MCP_PLUGIN_DIR;
+        if (!pluginDir) {
+            this.logger.warn("PENPOT_MCP_PLUGIN_DIR not set; plugin hosting disabled");
+            return;
+        }
+
+        const manifestPath = path.join(pluginDir, "manifest.json");
+        if (!existsSync(manifestPath)) {
+            this.logger.warn(`Plugin manifest not found at ${manifestPath}; plugin hosting disabled`);
+            return;
+        }
+
+        const pluginToken = process.env.PENPOT_MCP_PLUGIN_TOKEN;
+        const allowedOrigin = process.env.PENPOT_MCP_PLUGIN_ALLOWED_ORIGIN || "*";
+        const baseManifest = JSON.parse(readFileSync(manifestPath, "utf8")) as Record<string, any>;
+
+        const withToken = (value: string): string => {
+            if (!pluginToken) {
+                return value;
+            }
+            const separator = value.includes("?") ? "&" : "?";
+            return `${value}${separator}token=${encodeURIComponent(pluginToken)}`;
+        };
+
+        const setCors = (res: any): void => {
+            res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+            res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+        };
+
+        const requireToken = (req: any, res: any, next: any): void => {
+            if (!pluginToken) {
+                return next();
+            }
+            const token = req.query.token;
+            if (token !== pluginToken) {
+                res.status(401).send("Invalid plugin token");
+                return;
+            }
+            next();
+        };
+
+        this.app.options("/manifest.json", (req: any, res: any) => {
+            setCors(res);
+            res.status(204).send();
+        });
+
+        this.app.get("/manifest.json", requireToken, (req: any, res: any) => {
+            const manifest = { ...baseManifest };
+            if (manifest.code) {
+                manifest.code = withToken(manifest.code);
+            }
+            setCors(res);
+            res.json(manifest);
+        });
+
+        this.app.use(requireToken, (req: any, res: any, next: any) => {
+            setCors(res);
+            next();
+        });
+
+        this.app.use(express.static(pluginDir));
+        this.logger.info(`Plugin hosting enabled from ${pluginDir}`);
+    }
+
     async start(): Promise<void> {
         const { default: express } = await import("express");
         this.app = express();
         this.app.use(express.json());
 
+        this.setupApiKeyMiddleware();
         this.setupHttpEndpoints();
+        this.setupPluginEndpoints(express);
 
         return new Promise((resolve) => {
             this.app.listen(this.port, this.listenAddress, async () => {

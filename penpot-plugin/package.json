@@ -12,8 +12,7 @@
     "dependencies": {
         "@penpot-mcp/common": "file:../common",
         "@penpot/plugin-styles": "1.4.1",
-        "@penpot/plugin-types": "1.4.1",
-        "penpot-mcp": "file:.."
+        "@penpot/plugin-types": "1.4.1"
     },
     "devDependencies": {
         "cross-env": "^7.0.3",

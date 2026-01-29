@@ -7,7 +7,9 @@ console.log("Will define IS_MULTI_USER_MODE as:", JSON.stringify(process.env.MUL
 
 const serverAddress = process.env.PENPOT_MCP_SERVER_ADDRESS || "localhost";
 const websocketPort = process.env.PENPOT_MCP_WEBSOCKET_PORT || "4402";
-const websocketUrl = `ws://${serverAddress}:${websocketPort}`;
+const websocketScheme = process.env.PENPOT_MCP_WEBSOCKET_SCHEME || "ws";
+const websocketUrl =
+    process.env.PENPOT_MCP_WEBSOCKET_URL || `${websocketScheme}://${serverAddress}:${websocketPort}`;
 console.log("Will define PENPOT_MCP_WEBSOCKET_URL as:", JSON.stringify(websocketUrl));
 
 export default defineConfig({

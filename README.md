@@ -205,6 +205,7 @@ options use the `PENPOT_MCP_` prefix for consistency.
 | `PENPOT_MCP_REPL_PORT`             | Port for the REPL server (development/debugging)                           | `4403`       |
 | `PENPOT_MCP_SERVER_ADDRESS`        | Hostname or IP address via which clients can reach the MCP server          | `localhost`  |
 | `PENPOT_MCP_REMOTE_MODE`           | Enable remote mode (disables file system access). Set to `true` to enable. | `false`      |
+| `PENPOT_MCP_API_KEY`               | Optional API key required for `/mcp`, `/sse`, and `/messages` endpoints     | (unset)      |
 
 ### Logging Configuration
 
@@ -218,6 +219,11 @@ options use the `PENPOT_MCP_` prefix for consistency.
 | Environment Variable                      | Description                                                                             | Default      |
 |-------------------------------------------|-----------------------------------------------------------------------------------------|--------------|
 | `PENPOT_MCP_PLUGIN_SERVER_LISTEN_ADDRESS` | Address on which the plugin web server listens (single address or comma-separated list) | (local only) |
+| `PENPOT_MCP_PLUGIN_DIR`                   | Directory containing built plugin assets (manifest.json, plugin.js)                     | (unset)      |
+| `PENPOT_MCP_PLUGIN_TOKEN`                 | Token required to access plugin assets and manifest                                     | (unset)      |
+| `PENPOT_MCP_PLUGIN_ALLOWED_ORIGIN`        | CORS allowed origin for plugin assets (e.g., https://penpot.example.com)                | `*`          |
+| `PENPOT_MCP_WEBSOCKET_SCHEME`             | WebSocket scheme for plugin build (`ws` or `wss`)                                       | `ws`         |
+| `PENPOT_MCP_WEBSOCKET_URL`                | Full WebSocket URL override for plugin build                                            | (unset)      |
 
 ## Beyond Local Execution
 
