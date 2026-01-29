@@ -11,39 +11,35 @@ declare const IS_MULTI_USER_MODE: boolean;
 const isMultiUserMode = typeof IS_MULTI_USER_MODE !== "undefined" ? IS_MULTI_USER_MODE : false;
 
 const resolvePluginToken = (): string | null => {
-    let src = "";
-    try {
-        const metaUrl = (import.meta as { url?: string }).url;
-        if (metaUrl) {
-            src = metaUrl;
-        }
-    } catch {
-        // ignore
+    const sources: string[] = [];
+    const currentScript = document.currentScript as HTMLScriptElement | null;
+    if (currentScript?.src) {
+        sources.push(currentScript.src);
     }
 
-    if (!src) {
-        const script = document.currentScript as HTMLScriptElement | null;
-        src = script?.getAttribute("src") ?? "";
+    for (const el of Array.from(document.querySelectorAll("script[src]"))) {
+        const src = (el as HTMLScriptElement).src;
+        if (src) {
+            sources.push(src);
+        }
     }
 
-    if (!src) {
-        return null;
-    }
+    for (const src of sources) {
+        try {
+            const url = new URL(src, window.location.href);
+            const queryToken = url.searchParams.get("token");
+            if (queryToken) {
+                return queryToken;
+            }
 
-    try {
-        const url = new URL(src, window.location.href);
-        const queryToken = url.searchParams.get("token");
-        if (queryToken) {
-            return queryToken;
+            const parts = url.pathname.split("/").filter(Boolean);
+            const pluginIndex = parts.indexOf("plugin");
+            if (pluginIndex >= 0 && parts[pluginIndex + 1]) {
+                return parts[pluginIndex + 1];
+            }
+        } catch {
+            continue;
         }
-
-        const parts = url.pathname.split("/").filter(Boolean);
-        const pluginIndex = parts.indexOf("plugin");
-        if (pluginIndex >= 0 && parts[pluginIndex + 1]) {
-            return parts[pluginIndex + 1];
-        }
-    } catch {
-        return null;
     }
 
     return null;
